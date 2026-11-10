@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Игра в кости</title>
+<style>
+:root{--bg1:#f3e6cf;--bg2:#dcc3965e;--card:#fff8ea;--ink:#33241a;--mut:#8a7458;--line:#d6c09a;--felt:#e9dcc2;--die:#fffdf6;--p0:#d9482b;--p1:#1f9a94;--gold:#f5c542;--violet:#a78bfa;--shadow:rgba(60,35,10,.25);--tbl:#c9a574;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#1d1612;--bg2:#3a2a1c66;--card:#2b2019;--ink:#f6ead6;--mut:#b09a7c;--line:#54402e;--felt:#201812;--die:#f6ecd8;--p0:#ff6b4a;--p1:#38c9c0;--shadow:rgba(0,0,0,.5);--tbl:#4a3624;color-scheme:dark}}
+:root[data-theme="dark"]{--bg1:#1d1612;--bg2:#3a2a1c66;--card:#2b2019;--ink:#f6ead6;--mut:#b09a7c;--line:#54402e;--felt:#201812;--die:#f6ecd8;--p0:#ff6b4a;--p1:#38c9c0;--shadow:rgba(0,0,0,.5);--tbl:#4a3624;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;color:var(--ink);font-family:Georgia,"Times New Roman",serif;background:var(--bg1)}
+body{background:radial-gradient(ellipse at 50% 0,var(--bg2),transparent 70%),repeating-linear-gradient(45deg,transparent 0 14px,rgba(120,80,30,.05) 14px 15px),var(--bg1);min-height:100%}
+main{max-width:600px;margin:0 auto;padding:10px 10px 16px}
+header{text-align:center}
+h1{margin:4px 0 0;font-size:24px;letter-spacing:3px;text-transform:uppercase;font-variant:small-caps}
+.sub{margin:2px 0 0;font-size:12px;color:var(--mut);font-style:italic}
+.orn{display:flex;align-items:center;gap:8px;justify-content:center;color:var(--mut);font-size:12px;margin:2px 0}
+.orn::before,.orn::after{content:"";height:1px;width:70px;background:linear-gradient(90deg,transparent,var(--mut))}
+.orn::after{transform:scaleX(-1)}
+.mid{display:flex;align-items:center;justify-content:center;gap:12px;margin:8px 0 10px;min-height:60px;background:var(--card);border:1px solid var(--line);border-radius:40px;padding:6px 18px;box-shadow:0 3px 10px var(--shadow)}
+.big{width:48px;height:48px;flex:none}
+.big .die{animation:none}
+
+.msg{font-size:14px;text-align:left;line-height:1.3}
+.arena{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:10px;background:var(--tbl);border-radius:18px;box-shadow:inset 0 2px 10px var(--shadow),0 4px 14px var(--shadow)}
+.arena::after{content:"";position:absolute;left:50%;top:14px;bottom:14px;width:2px;background:repeating-linear-gradient(var(--gold) 0 6px,transparent 6px 12px);opacity:.6;transform:translateX(-50%)}
+.player{background:var(--card);border:2px solid var(--line);border-top:5px solid var(--c);border-radius:12px;padding:6px;min-width:0;transition:.25s;position:relative;z-index:1}
+.p0{--c:var(--p0)}.p1{--c:var(--p1)}
+.player.active{box-shadow:0 0 0 3px var(--c),0 0 18px var(--c)}
+.player.win{box-shadow:0 0 0 3px var(--gold),0 0 22px var(--gold)}
+.head{display:flex;justify-content:space-between;align-items:center;gap:4px;margin-bottom:6px}
+.head input{width:100%;min-width:0;font:inherit;font-weight:bold;font-size:13px;color:var(--c);background:transparent;border:0;border-bottom:1px dashed var(--line);padding:2px 0;outline:0}
+.head input:focus{border-bottom-color:var(--c)}
+.total{font-size:22px;font-weight:bold;color:var(--c);background:var(--felt);border-radius:8px;padding:0 8px;min-width:38px;text-align:center}
+.board{display:grid;grid-template-rows:repeat(3,1fr);gap:6px}
+.col{display:flex;align-items:center;gap:3px;border:2px solid var(--line);border-radius:9px;padding:3px;background:var(--felt);box-shadow:inset 0 2px 4px var(--shadow);font:inherit;color:inherit;cursor:default;min-width:0;transition:.15s}
+.col.left{flex-direction:row-reverse}
+.col.ok{cursor:pointer;border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,var(--felt))}
+.col.ok:hover{transform:scale(1.03)}
+.sc{width:22px;text-align:center;font-size:13px;font-weight:bold;color:var(--mut);flex:none}
+.cell{flex:1;aspect-ratio:1;min-width:0;border-radius:7px;background:rgba(0,0,0,.07);display:grid;place-items:center}
+.die{--pip:var(--c);width:100%;height:100%;background:linear-gradient(145deg,#fff,var(--die));border-radius:7px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:13%;box-shadow:0 2px 0 rgba(0,0,0,.3),inset 0 0 0 1px rgba(0,0,0,.08);animation:pop .3s}
+.o0{--c:var(--p0)}.o1{--c:var(--p1)}
+.die.m2{background:linear-gradient(145deg,#fff3b0,var(--gold));box-shadow:0 2px 0 rgba(0,0,0,.3),0 0 8px var(--gold)}
+.die.m3{background:linear-gradient(145deg,#ede9fe,var(--violet));box-shadow:0 2px 0 rgba(0,0,0,.3),0 0 10px var(--violet)}
+.die i{width:78%;height:78%;border-radius:50%;background:var(--pip);place-self:center}
+@keyframes pop{from{transform:scale(.3) rotate(-30deg)}to{transform:none}}
+@keyframes roll{0%{transform:rotate(0) scale(.6)}100%{transform:rotate(360deg) scale(1)}}
+.sess{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
+.sess select,.sess input{font:inherit;font-size:13px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}
+.sess select{flex:2 1 140px}.sess input{flex:2 1 120px}
+button.sm{padding:6px 12px;font-size:13px;box-shadow:0 2px 0 rgba(0,0,0,.3)}
+button.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.score{display:flex;align-items:baseline;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:15px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.score b{font-size:24px}
+.score .c0{color:var(--p0);font-weight:bold}.score .c1{color:var(--p1);font-weight:bold}
+.sub2{width:100%;text-align:center;font-size:12px;color:var(--mut)}
+.sep{color:var(--mut)}
+.rs{text-align:center}
+.lnk{background:none;border:0;color:var(--mut);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer;padding:4px 8px}
+[hidden]{display:none!important}
+.onl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.onl button.btn{width:100%;box-shadow:none;padding:9px 6px;font-size:13px;background:var(--card);color:var(--ink);border:1px solid var(--line);transition:.15s}
+.onl button.btn:hover{border-color:var(--mut)}
+.onl button.btn:active{transform:scale(.98)}
+.onl input{grid-column:1/-1;width:100%;font:inherit;font-size:13px;text-transform:uppercase;text-align:center;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+#onlinfo{grid-column:1/-1;text-align:center;font-size:12px;color:var(--mut);word-break:break-word}
+#onlinfo:empty{display:none}
+@media (max-width:520px){.head input,.onl input{font-size:16px}.arena{gap:10px;padding:6px}.player{padding:4px}.sc{width:18px}h1{font-size:20px}}
+@media (max-height:500px) and (orientation:landscape){main{max-width:420px}}
+.row{display:flex;gap:10px;justify-content:center;margin-top:12px}
+button.btn{font:inherit;background:linear-gradient(var(--p0),color-mix(in srgb,var(--p0) 75%,#000));color:#fff;border:0;border-radius:10px;padding:9px 20px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.3)}
+button.btn:active{transform:translateY(2px);box-shadow:none}
+details{margin-top:10px;font-size:13px;color:var(--mut);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+summary{cursor:pointer}
+.over{font-size:16px;font-weight:bold;color:var(--gold)}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+<main>
+<header><div class="orn">◆ ◆ ◆</div><h1>Игра в кости</h1><p class="sub">Дуэль на костях</p></header>
+<div class="onl" id="onl" hidden><button class="btn sm ghost" id="mkG">Создать онлайн-игру</button><input id="code" hidden maxlength="4" placeholder="Код" aria-label="Код игры"><button class="btn sm ghost" id="joinG">Войти по коду</button><button class="btn sm ghost" id="cpG" hidden>Скопировать ссылку</button><button class="btn sm ghost" id="leaveG" hidden>Выйти из игры</button><span id="onlinfo"></span></div>
+<div class="score" id="score"></div>
+<div class="rs"><button class="lnk" id="restart">сбросить счёт</button></div>
+<div class="mid"><div class="big" id="die"></div><div class="msg" id="msg"></div></div>
+<div class="arena">
+<section id="p0" class="player p0"><div class="head"><input id="n0" maxlength="14" placeholder="Игрок 1" aria-label="Имя первого игрока"><span class="total" id="t0">0</span></div><div class="board" id="b0"></div></section>
+<section id="p1" class="player p1"><div class="head"><input id="n1" maxlength="14" placeholder="Игрок 2" aria-label="Имя второго игрока"><span class="total" id="t1">0</span></div><div class="board" id="b1"></div></section>
+</div>
+<div class="row"><button class="btn" id="reset">Новая игра</button></div>
+<details><summary>Правила</summary>
+<p>У каждого игрока поле 3×3. По очереди бросайте кубик и ставьте число в любую свою строку. Кости с таким же числом в строке напротив у соперника сгорают. Одинаковые кости в одной строке умножают друг друга: две четвёрки дают 16 очков, три шестёрки — 54. Игра заканчивается, когда у кого-то заполнено всё поле; побеждает тот, у кого больше очков.</p></details>
+</main>
+<script>
+const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+let G;
+const $=id=>document.getElementById(id);
+const nm=p=>$("n"+p).value.trim()||("Игрок "+(p+1));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let S={n:["",""],w:[0,0],d:0};
+try{const r=JSON.parse(localStorage.getItem("kb_score")||"null");if(r&&r.w&&r.n)S=r}catch(e){}
+const save=()=>{try{localStorage.setItem("kb_score",JSON.stringify(S))}catch(e){}};
+const cs=()=>S;
+function loadNames(){for(const p of[0,1])$("n"+p).value=S.n[p]||""}
+function sessUI(){
+  const s=O?{w:G.w,d:G.d}:S;
+  $("score").innerHTML=`<span class="c0">${esc(nm(0))}</span><b>${s.w[0]}</b><span class="sep">:</span><b>${s.w[1]}</b><span class="c1">${esc(nm(1))}</span><div class="sub2">Партий: ${s.w[0]+s.w[1]+s.d} · Ничьих: ${s.d}</div>`;
+}
+function record(){const a=total(0),b=total(1);if(a>b)S.w[0]++;else if(b>a)S.w[1]++;else S.d++;save();sessUI()}
+for(const p of[0,1])$("n"+p).addEventListener("input",()=>{if(O)return;cs().n[p]=$("n"+p).value;save();sessUI();if(G)msg()});
+function dieHTML(v,cls=""){let s='<div class="die '+cls+'">';for(let i=0;i<9;i++)s+=PIPS[v].includes(i)?'<i></i>':'<span></span>';return s+'</div>'}
+const colScore=c=>c.reduce((s,d)=>s+d*c.filter(x=>x===d).length,0);
+const total=p=>G.b[p].reduce((s,c)=>s+colScore(c),0);
+function init(){G={b:[[[],[],[]],[[],[],[]]],turn:0,die:null,over:false};roll()}
+function roll(){G.die=1+Math.floor(Math.random()*6);render()}
+function place(c){
+  if(O)return onlinePlace(c);
+  if(G.over||G.b[G.turn][c].length>=3)return;
+  const me=G.turn,op=1-me,d=G.die;
+  G.b[me][c].push(d);
+  G.b[op][c]=G.b[op][c].filter(x=>x!==d);
+  if(G.b[me].every(col=>col.length===3)){G.over=true;G.die=null;record();render();return}
+  G.turn=op;roll();
+}
+function boardHTML(p){
+  let h="";
+  for(let c=0;c<3;c++){
+    const col=G.b[p][c],can=!G.over&&G.turn===p&&col.length<3&&(!O||O.my===p);
+    h+=`<button class="col ${p===0?'left':''} ${can?'ok':''}" ${can?`data-c="${c}"`:'disabled'} aria-label="Ряд ${c+1}">`;
+    for(let r=0;r<3;r++){
+      const v=col[r],n=v?col.filter(x=>x===v).length:0;
+      h+=`<div class="cell">${v?dieHTML(v,'o'+p+(n===2?' m2':n===3?' m3':'')):''}</div>`;
+    }
+    h+=`<div class="sc">${colScore(col)}</div></button>`;
+  }
+  return h;
+}
+function msg(){
+  const m=$("msg");
+  if(G.over){const a=total(0),b=total(1);
+    m.innerHTML='<div class="over">'+(a===b?'Ничья!':'Победил: '+(a>b?nm(0):nm(1)).replace(/</g,'&lt;'))+`</div>Счёт ${a} : ${b}`}
+  else if(O&&O.my!==G.turn){m.textContent=false?"":((!O.host||(O.conn&&O.conn.open))?"Ходит "+nm(G.turn)+"… Выпало "+G.die:"Ждём второго игрока. Код игры: "+O.code)}
+  else{m.textContent=(O?"Ваш ход. ":"Ход: "+nm(G.turn)+". ")+"Выпало "+G.die+" — выберите ряд."}
+}
+function showDie(){$("die").innerHTML=G.die?dieHTML(G.die,"o"+G.turn):""}
+function render(){
+  const t=[total(0),total(1)];
+  for(const p of[0,1]){
+    $("b"+p).innerHTML=boardHTML(p);
+    $("t"+p).textContent=t[p];
+    $("p"+p).className="player p"+p+(G.over?(t[p]>=t[1-p]?" win":""):(G.turn===p?" active":""));
+  }
+  showDie();
+  msg();
+  document.querySelectorAll(".col.ok").forEach(b=>b.onclick=()=>place(+b.dataset.c));
+}
+let arm=0;
+$("restart").onclick=e=>{const b=e.target;
+  if(!arm){arm=1;b.textContent="точно сбросить?";setTimeout(()=>{arm=0;b.textContent="сбросить счёт"},3000);return}
+  arm=0;b.textContent="сбросить счёт";
+  if(O){onlineRestart();return}
+  S.w=[0,0];S.d=0;save();sessUI();init()};
+$("reset").onclick=()=>O?onlineNew():init();
+let codeOpen=false;let O=null,PR=null;
+const info=t=>{$("onlinfo").textContent=t};
+const rnd=()=>1+Math.floor(Math.random()*6);
+const fresh=()=>({b:[[[],[],[]],[[],[],[]]],turn:0,die:rnd(),over:false,names:["",""],w:[0,0],d:0});
+const pack=()=>JSON.stringify({b:G.b,turn:G.turn,die:G.die,over:G.over,names:G.names,w:G.w,d:G.d});
+const push=()=>{if(O&&O.host&&O.conn&&O.conn.open)O.conn.send({t:"s",s:pack()})};
+function setOnl(){
+  const on=!!O;$("mkG").hidden=on;$("code").hidden=on||!codeOpen;$("joinG").textContent=codeOpen?"Подключиться":"Войти по коду";$("joinG").hidden=on;$("leaveG").hidden=!on;$("cpG").hidden=!on;
+  for(const p of[0,1])$("n"+p).disabled=on&&O.my!==p;
+  if(on)info("Код игры: "+O.code+" · вы — игрок "+(O.my+1)+(O.host&&!(O.conn&&O.conn.open)?" · ждём соперника":""));
+}
+function doMove(me,c){
+  if(G.over||G.turn!==me||G.b[me][c].length>=3)return;
+  const op=1-me,d=G.die;
+  G.b[me][c].push(d);G.b[op][c]=G.b[op][c].filter(x=>x!==d);
+  if(G.b[me].every(col=>col.length===3)){G.over=true;G.die=null;const a=total(0),b=total(1);if(a>b)G.w[0]++;else if(b>a)G.w[1]++;else G.d++}
+  else{G.turn=op;G.die=rnd()}
+}
+function resetGame(){const w=G.w,d=G.d,n=G.names;G=fresh();G.w=w;G.d=d;G.names=n;G.turn=(w[0]+w[1]+d)%2}
+function hostData(m){
+  if(m.t==="m")doMove(1,m.c);
+  else if(m.t==="n")G.names[1]=m.v;
+  else if(m.t==="new")resetGame();
+  else if(m.t==="rs"){G.w=[0,0];G.d=0;resetGame()}
+  $("n1").value=G.names[1]||"";render();sessUI();push();
+}
+function mkGame(tries=0){
+  const code=Array.from({length:4},()=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32)]).join("");
+  info("Создаём игру…");
+  const pr=new Peer("kbones-"+code);
+  pr.on("open",()=>{
+    PR=pr;G=fresh();G.names[0]=$("n0").value.trim();O={code,my:0,host:true,conn:null};
+    pr.on("connection",c=>{
+      if(O&&O.conn&&O.conn.open){c.close();return}
+      O.conn=c;
+      c.on("open",()=>{push();setOnl();render()});
+      c.on("data",hostData);
+      c.on("close",()=>{info("Соперник отключился. Код игры: "+code);render()});
+    });
+    try{location.hash=code}catch(e){}
+    setOnl();render();sessUI();
+  });
+  pr.on("error",e=>{if(e.type==="unavailable-id"&&tries<5){pr.destroy();mkGame(tries+1)}else info("Не удалось создать игру")});
+}
+function joinGame(code){
+  code=code.trim().toUpperCase();if(code.length!==4)return info("Введите 4-значный код");
+  info("Подключаемся…");
+  const pr=new Peer();
+  pr.on("open",()=>{
+    const c=pr.connect("kbones-"+code,{reliable:true});
+    c.on("open",()=>{PR=pr;O={code,my:1,host:false,conn:c};G=fresh();c.send({t:"n",v:$("n1").value.trim()});setOnl()});
+    c.on("data",m=>{if(m.t==="s"){G=JSON.parse(m.s);$("n0").value=G.names[0]||"";if(document.activeElement!==$("n1"))$("n1").value=G.names[1]||"";render();sessUI();setOnl()}});
+    c.on("close",()=>info("Соединение потеряно"));
+  });
+  pr.on("error",e=>{pr.destroy();info(e.type==="peer-unavailable"?"Игра не найдена":"Не удалось подключиться")});
+}
+function leave(){
+  if(PR)PR.destroy();PR=null;O=null;
+  try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}
+  $("onlinfo").textContent="";codeOpen=false;setOnl();loadNames();sessUI();init();
+}
+function onlinePlace(c){
+  if(!O)return;
+  if(O.host){doMove(0,c);render();sessUI();push()}
+  else if(G.turn===1&&!G.over&&G.b[1][c].length<3)O.conn.send({t:"m",c});
+}
+function onlineRestart(){
+  if(!O)return;
+  if(O.host){G.w=[0,0];G.d=0;resetGame();render();sessUI();push()}else O.conn.send({t:"rs"});
+}
+function onlineNew(){
+  if(!O)return;
+  if(O.host){resetGame();render();sessUI();push()}else O.conn.send({t:"new"});
+}
+for(const p of[0,1])$("n"+p).addEventListener("change",()=>{
+  if(!O)return;const v=$("n"+p).value.trim();
+  if(O.host&&p===0){G.names[0]=v;push();sessUI()}else if(!O.host&&p===1)O.conn.send({t:"n",v});
+});
+if(typeof Peer!=="undefined"){
+  $("onl").hidden=false;
+  $("mkG").onclick=()=>mkGame();$("joinG").onclick=()=>{if(!codeOpen){codeOpen=true;setOnl();$("code").focus();return}joinGame($("code").value)};
+  $("code").addEventListener("keydown",e=>{if(e.key==="Enter")joinGame($("code").value)});$("leaveG").onclick=leave;
+  $("cpG").onclick=async()=>{const u=location.href.split("#")[0]+"#"+O.code;try{await navigator.clipboard.writeText(u);$("cpG").textContent="Скопировано";setTimeout(()=>{$("cpG").textContent="Скопировать ссылку"},1500)}catch(e){info("Ссылка: "+u)}};
+  const h=location.hash.slice(1);
+  if(/^[A-Za-z0-9]{4}$/.test(h)){$("code").value=h.toUpperCase();joinGame(h)}
+}
+loadNames();sessUI();init();
+</script>
+</body>
+</html>
